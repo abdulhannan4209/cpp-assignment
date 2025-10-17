@@ -1,10 +1,3 @@
-// sha256_mark.cpp
-// Original SHA-256 implementation in C++17
-// Author: [Your Name]
-// Description: Compute SHA-256 for any input file (e.g., Book of Mark text).
-// Compile: g++ -std=c++17 -O2 sha256_mark.cpp -o sha256_mark
-// Usage:   ./sha256_mark mark.txt
-
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -14,12 +7,10 @@
 #include <cstdint>
 #include <cstring>
 
-// Rotate right (circular right shift)
 static inline uint32_t rotr(uint32_t x, uint32_t n) {
     return (x >> n) | (x << (32 - n));
 }
 
-// SHA-256 Constants (first 32 bits of the fractional parts of cube roots of primes)
 static const uint32_t K[64] = {
     0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
     0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
@@ -37,46 +28,38 @@ static const uint32_t H0[8] = {
     0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19
 };
 
-// Main SHA-256 algorithm
 std::string sha256(const std::vector<uint8_t>& data) {
     uint64_t bit_len = data.size() * 8;
     std::vector<uint8_t> msg = data;
 
-    // Append '1' bit (0x80), then pad with zeros until length ≡ 448 (mod 512)
     msg.push_back(0x80);
     while ((msg.size() * 8) % 512 != 448) {
         msg.push_back(0x00);
     }
 
-    // Append the original message length as a 64-bit big-endian integer
     for (int i = 7; i >= 0; --i)
         msg.push_back(static_cast<uint8_t>((bit_len >> (i * 8)) & 0xFF));
 
-    // Initialize hash values
     uint32_t h[8];
     std::memcpy(h, H0, sizeof(H0));
 
-    // Process message in 512-bit chunks
     for (size_t chunk_start = 0; chunk_start < msg.size(); chunk_start += 64) {
         uint32_t w[64];
-        // Break chunk into 16 32-bit big-endian words
+
         for (int i = 0; i < 16; ++i) {
             size_t idx = chunk_start + i * 4;
             w[i] = (msg[idx] << 24) | (msg[idx + 1] << 16) | (msg[idx + 2] << 8) | msg[idx + 3];
         }
 
-        // Extend the first 16 words into the remaining 48 words
         for (int i = 16; i < 64; ++i) {
             uint32_t s0 = rotr(w[i - 15], 7) ^ rotr(w[i - 15], 18) ^ (w[i - 15] >> 3);
             uint32_t s1 = rotr(w[i - 2], 17) ^ rotr(w[i - 2], 19) ^ (w[i - 2] >> 10);
             w[i] = (w[i - 16] + s0 + w[i - 7] + s1) & 0xFFFFFFFF;
         }
 
-        // Initialize working variables
         uint32_t a = h[0], b = h[1], c = h[2], d = h[3];
         uint32_t e = h[4], f = h[5], g = h[6], hh = h[7];
 
-        // Compression loop
         for (int i = 0; i < 64; ++i) {
             uint32_t S1 = rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25);
             uint32_t ch = (e & f) ^ (~e & g);
@@ -95,7 +78,6 @@ std::string sha256(const std::vector<uint8_t>& data) {
             a = (temp1 + temp2) & 0xFFFFFFFF;
         }
 
-        // Add compressed chunk to current hash value
         h[0] = (h[0] + a) & 0xFFFFFFFF;
         h[1] = (h[1] + b) & 0xFFFFFFFF;
         h[2] = (h[2] + c) & 0xFFFFFFFF;
@@ -106,7 +88,6 @@ std::string sha256(const std::vector<uint8_t>& data) {
         h[7] = (h[7] + hh) & 0xFFFFFFFF;
     }
 
-    // Convert hash to hexadecimal string
     std::ostringstream result;
     result << std::hex << std::setfill('0');
     for (int i = 0; i < 8; ++i)
@@ -115,7 +96,6 @@ std::string sha256(const std::vector<uint8_t>& data) {
     return result.str();
 }
 
-// Read entire file into a byte vector
 std::vector<uint8_t> read_file(const std::string& filename) {
     std::ifstream file(filename, std::ios::binary);
     if (!file)
